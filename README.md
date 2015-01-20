@@ -1,9 +1,13 @@
 UPDATE
 ======
 Supports:
+
 1. excelFromHTML
+
 2. csvFromHTML
+
 3. expandTableRowSpan
+
 4. expandTablesRowSpan
 
 ExcellentExport.js
