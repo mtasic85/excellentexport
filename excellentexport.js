@@ -94,13 +94,24 @@ ExcellentExport = (function() {
     "use strict";
     var version = "1.3";
     var csvSeparator = ',';
-    var uri = {excel: 'data:application/vnd.ms-excel;base64,', csv: 'data:application/csv;base64,'};
-    var template = {excel: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>'};
+    
+    var uri = {
+        excel: 'data:application/vnd.ms-excel;base64,',
+        csv: 'data:application/csv;base64,'
+    };
+    
+    var template = {
+        excel: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>',
+        excelFromHTML: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{innerHTML}</body></html>'
+    };
+
     var csvDelimiter = ",";
     var csvNewLine = "\r\n";
+    
     var base64 = function(s) {
         return window.btoa(window.unescape(encodeURIComponent(s)));
     };
+    
     var format = function(s, c) {
         return s.replace(new RegExp("{(\\w+)}", "g"), function(m, p) {
             return c[p];
@@ -144,16 +155,16 @@ ExcellentExport = (function() {
 
     var ee = {
         /** @expose */
-        excel: function(anchor, table, name) {
+        excel: function excel(anchor, table, name) {
             table = get(table);
             var ctx = {worksheet: name || 'Worksheet', table: table.innerHTML};
             var hrefvalue = uri.excel + base64(format(template.excel, ctx));
             anchor.href = hrefvalue;
-            // Return true to allow the link to work
-            return true;
+            return true;    // Return true to allow the link to work
         },
+
         /** @expose */
-        csv: function(anchor, table, delimiter, newLine) {
+        csv: function csv(anchor, table, delimiter, newLine) {
             if (delimiter !== undefined && delimiter) {
                 csvDelimiter = delimiter;
             }
@@ -164,7 +175,87 @@ ExcellentExport = (function() {
             var csvData = tableToCSV(table);
             var hrefvalue = uri.csv + base64(csvData);
             anchor.href = hrefvalue;
-            return true;
+            return true;    // Return true to allow the link to work
+        },
+
+        /** @expose */
+        excelFromHTML: function excelFromHTML(innerHTML, name) {
+            var ctx = {worksheet: name || 'Worksheet', innerHTML: innerHTML};
+            var href = uri.excel + base64(format(template.excelFromHTML, ctx));
+            
+            var link = document.createElement("a");
+            link.setAttribute("href", href);
+            link.setAttribute("download", "untitled.xls");
+            link.click();
+
+            return false;
+        },
+
+        /** @expose */
+        csvFromHTML: function csvFromHTML(innerHTML, delimiter, newLine) {
+            if (delimiter !== undefined && delimiter) {
+                csvDelimiter = delimiter;
+            }
+            
+            if (newLine !== undefined && newLine) {
+                csvNewLine = newLine;
+            }
+
+            var tables = $(innerHTML);
+            var csvData = '';
+
+            for (var i = 0; i < tables.length; i++) {
+                var table = tables[i];
+
+                if (table.nodeName != "TABLE") {
+                    continue;
+                }
+
+                csvData += tableToCSV(table) + '\n';
+            }
+
+            var href = uri.csv + base64(csvData);
+            
+            var link = document.createElement("a");
+            link.setAttribute("href", href);
+            link.setAttribute("download", "untitled.csv");
+            link.click();
+
+            return false;
+        },
+
+        expandTableRowSpan: function expandTableRowSpan(table) {
+            var trs = $(table).find('tr');
+
+            for (var i = 0; i < trs.length; i++) {
+                var $tr = $(trs[i]);
+                var tds = $tr.find('td');
+
+                for (var j = tds.length - 1; j >= 0; j--) {
+                    var $td = $(tds[j]);
+                    var rowspan = $td.prop('rowspan');
+                    
+                    if (rowspan <= 1) continue;
+
+                    for (var x = i + 1; x < i + rowspan; x++) {
+                        var $_tr = $(trs[x]);
+                        
+                        $('<td>')
+                            .prependTo($_tr);
+                    }
+
+                    $td.prop('rowspan', 1);
+                }
+            }
+        },
+
+        expandTablesRowSpan: function expandTablesRowSpan(parent) {
+            var tables = parent.find('table');
+
+            for (var i = 0; i < tables.length; i++) {
+                var table = tables[i];
+                ee.expandTableRowSpan(table);
+            }
         }
     };
 
