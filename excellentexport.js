@@ -102,7 +102,10 @@ ExcellentExport = (function() {
     
     var template = {
         excel: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>',
-        excelFromHTML: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{innerHTML}</body></html>'
+        excelFromHTML: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{innerHTML}</body></html>',
+        excelFromHTML_0: '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>',
+        excelFromHTML_1: '</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>',
+        excelFromHTML_2: '</body></html>'
     };
 
     var csvDelimiter = ",";
@@ -179,13 +182,26 @@ ExcellentExport = (function() {
         },
 
         /** @expose */
-        excelFromHTML: function excelFromHTML(innerHTML, name) {
-            var ctx = {worksheet: name || 'Worksheet', innerHTML: innerHTML};
-            var href = uri.excel + base64(format(template.excelFromHTML, ctx));
+        excelFromHTML: function excelFromHTML(innerHTML, worksheet, filename) {
+            worksheet = worksheet || 'Sheet';
+            filename = filename || "untitled.xls";
+
+            var href = (
+                uri.excel +
+                base64(
+                    template.excelFromHTML_0 +
+                    worksheet +
+                    template.excelFromHTML_1 +
+                    innerHTML +
+                    template.excelFromHTML_2
+                )
+            );
+
+            console.log(worksheet, filename, href);
             
             var link = document.createElement("a");
             link.setAttribute("href", href);
-            link.setAttribute("download", "untitled.xls");
+            link.setAttribute("download", filename);
             link.click();
 
             return false;
